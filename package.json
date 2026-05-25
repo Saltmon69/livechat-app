@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.livechat.overlay",
-    "productName": "LiveChat Overlay",
+    "productName": "LiveChatOverlay",
     "publish": {
       "provider": "github",
       "owner": "Saltmon69",
@@ -25,7 +25,8 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "artifactName": "LiveChatOverlay-Setup-${version}.exe"
     },
     "nsis": {
       "oneClick": true,
