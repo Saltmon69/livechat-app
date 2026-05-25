@@ -118,6 +118,11 @@ document.getElementById('btn').onclick = async () => {
 };
 
 load();
+ipcRenderer.invoke('get-version').then(v => {
+  const el = document.getElementById('ver');
+  if (el) el.textContent = v;
+});
 </script>
+<div style="text-align:center;font-size:11px;color:#4f545c;margin-top:16px">v<span id="ver"></span></div>
 </body>
 </html>

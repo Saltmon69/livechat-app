@@ -1,6 +1,6 @@
 {
   "name": "livechat-overlay",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "LiveChat Overlay",
   "main": "src/main.js",
   "scripts": {
@@ -27,7 +27,14 @@
       "target": "nsis",
       "icon": "assets/icon.ico"
     },
-    "nsis": { "oneClick": true, "perMachine": false },
-    "files": ["src/**/*", "assets/**/*", "package.json"]
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ]
   }
 }
