@@ -1,0 +1,25 @@
+{
+  "name": "livechat-overlay",
+  "version": "2.0.0",
+  "description": "LiveChat Overlay",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "dependencies": { "ws": "^8.16.0" },
+  "devDependencies": {
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.livechat.overlay",
+    "productName": "LiveChat Overlay",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": { "oneClick": true, "perMachine": false },
+    "files": ["src/**/*", "assets/**/*", "package.json"]
+  }
+}

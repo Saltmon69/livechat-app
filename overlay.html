@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100vw; height: 100vh;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+#overlay.show { visibility: visible; }
+
+/* Avatar + pseudo - haut gauche */
+#sender {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: none;
+}
+
+#username {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  text-shadow:
+    -2px -2px 0 #000,
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000;
+  display: none;
+}
+
+/* Média centré */
+#media-wrap {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#media-img {
+  display: block;
+  max-width: 90vw;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+#media-vid {
+  display: block;
+  max-width: 90vw;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Texte sous le média */
+#text-el {
+  margin-top: 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  max-width: 80vw;
+  line-height: 1.4;
+  word-break: break-word;
+  text-shadow:
+    -2px -2px 0 #000,
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000,
+     0   -2px 0 #000,
+     0    2px 0 #000,
+    -2px   0  0 #000,
+     2px   0  0 #000;
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div id="sender">
+    <img id="avatar" src="" alt="">
+    <span id="username"></span>
+  </div>
+
+  <div id="media-wrap">
+    <img id="media-img" src="" alt="">
+    <video id="media-vid" playsinline></video>
+  </div>
+
+  <div id="text-el"></div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+const overlay  = document.getElementById('overlay');
+const avatarEl = document.getElementById('avatar');
+const unameEl  = document.getElementById('username');
+const mediaWrap= document.getElementById('media-wrap');
+const imgEl    = document.getElementById('media-img');
+const vidEl    = document.getElementById('media-vid');
+const textEl   = document.getElementById('text-el');
+
+let hideTimer = null;
+
+function hide() {
+  overlay.classList.remove('show');
+  vidEl.pause();
+  vidEl.src = '';
+  imgEl.src = '';
+}
+
+function show(msg) {
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+
+  const { username, avatar, text, url, mediaType, defaultDuration } = msg;
+
+  // Sender
+  if (avatar) { avatarEl.src = avatar; avatarEl.style.display = 'block'; } else { avatarEl.style.display = 'none'; }
+  if (username) { unameEl.textContent = username; unameEl.style.display = 'block'; } else { unameEl.style.display = 'none'; }
+
+  // Texte
+  if (text) { textEl.textContent = text; textEl.style.display = 'block'; } else { textEl.style.display = 'none'; }
+
+  // Média
+  imgEl.style.display = 'none';
+  vidEl.style.display = 'none';
+  mediaWrap.style.display = 'none';
+
+  overlay.classList.add('show');
+
+  if (url) {
+    mediaWrap.style.display = 'flex';
+
+    if (mediaType === 'video') {
+      vidEl.style.display = 'block';
+      vidEl.src = url;
+      vidEl.load();
+
+      vidEl.onloadedmetadata = () => {
+        const dur = vidEl.duration;
+        const MAX = 30;
+        if (dur <= 5) {
+          // joue 2 fois
+          let plays = 0;
+          vidEl.play();
+          vidEl.onended = () => {
+            plays++;
+            if (plays < 2) { vidEl.currentTime = 0; vidEl.play(); }
+            else { hideTimer = setTimeout(hide, 300); }
+          };
+        } else {
+          vidEl.play();
+          const cutoff = Math.min(dur, MAX) * 1000;
+          vidEl.onended = () => { hideTimer = setTimeout(hide, 300); };
+          hideTimer = setTimeout(hide, cutoff);
+        }
+      };
+
+    } else if (mediaType === 'gif') {
+      imgEl.style.display = 'block';
+      imgEl.src = url;
+      // GIF : on l'affiche 1x, durée fixe
+      const gifDuration = defaultDuration * 1000;
+      hideTimer = setTimeout(hide, Math.min(gifDuration, 30000));
+
+    } else {
+      // image
+      imgEl.style.display = 'block';
+      imgEl.src = url;
+      hideTimer = setTimeout(hide, defaultDuration * 1000);
+    }
+  } else {
+    // texte seul
+    hideTimer = setTimeout(hide, defaultDuration * 1000);
+  }
+}
+
+ipcRenderer.on('show-media', (_, msg) => show(msg));
+</script>
+</body>
+</html>
