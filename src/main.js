@@ -89,7 +89,12 @@ function connect(cfg) {
 
   ws.on('close', () => {
     setTray('déconnecté — reconnexion...');
-    reconnectTimer = setTimeout(() => connect(loadConfig()), 5000);
+    if (!reconnectTimer) {
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connect(loadConfig());
+      }, 5000);
+    }
   });
 
   ws.on('error', () => {});
