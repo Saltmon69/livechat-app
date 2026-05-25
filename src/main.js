@@ -1,3 +1,4 @@
+// v2.5.0
 const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, dialog } = require('electron');
 const { WebSocket } = require('ws');
 const { autoUpdater } = require('electron-updater');
