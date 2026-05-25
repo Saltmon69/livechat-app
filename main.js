@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, dialog } = require('electron');
 const { WebSocket } = require('ws');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 
@@ -98,6 +99,32 @@ function setTray(status) {
   if (tray) tray.setToolTip(`LiveChat — ${status}`);
 }
 
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', () => {
+    setTray('Mise à jour en cours...');
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Mise à jour disponible',
+      message: 'Une nouvelle version a été téléchargée. L\'app va redémarrer pour l\'installer.',
+      buttons: ['Redémarrer maintenant', 'Plus tard']
+    }).then(result => {
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', () => {});
+
+  // Vérif au démarrage + toutes les heures
+  autoUpdater.checkForUpdates().catch(() => {});
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 3600000);
+}
+
 app.whenReady().then(() => {
   createOverlay();
   const cfg = loadConfig();
@@ -114,6 +141,8 @@ app.whenReady().then(() => {
     { label: 'Quitter', click: () => app.quit() }
   ]));
   tray.on('click', createConfigWindow);
+
+  if (app.isPackaged) setupAutoUpdater();
 });
 
 ipcMain.handle('get-config', () => loadConfig());
