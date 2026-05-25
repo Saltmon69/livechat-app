@@ -117,6 +117,7 @@ html, body {
 
   <div id="text-el"></div>
 </div>
+<audio id="audio-el"></audio>
 
 <script>
 const { ipcRenderer } = require('electron');
@@ -128,6 +129,7 @@ const mediaWrap= document.getElementById('media-wrap');
 const imgEl    = document.getElementById('media-img');
 const vidEl    = document.getElementById('media-vid');
 const textEl   = document.getElementById('text-el');
+const audioEl  = document.getElementById('audio-el');
 
 let hideTimer = null;
 
@@ -136,6 +138,9 @@ function hide() {
   vidEl.pause();
   vidEl.src = '';
   imgEl.src = '';
+  audioEl.pause();
+  audioEl.src = '';
+  ipcRenderer.invoke('media-done').catch(() => {});
 }
 
 function show(msg) {
@@ -167,9 +172,7 @@ function show(msg) {
 
       vidEl.onloadedmetadata = () => {
         const dur = vidEl.duration;
-        const MAX = 30;
         if (dur <= 5) {
-          // joue 2 fois
           let plays = 0;
           vidEl.play();
           vidEl.onended = () => {
@@ -179,11 +182,15 @@ function show(msg) {
           };
         } else {
           vidEl.play();
-          const cutoff = Math.min(dur, MAX) * 1000;
+          // Pas de timer forcé — on attend la fin naturelle de la vidéo
           vidEl.onended = () => { hideTimer = setTimeout(hide, 300); };
-          hideTimer = setTimeout(hide, cutoff);
         }
       };
+
+      // Fallback si metadata jamais chargée (ex: format non supporté)
+      hideTimer = setTimeout(() => {
+        if (!vidEl.duration) hide();
+      }, 35000);
 
     } else if (mediaType === 'gif') {
       imgEl.style.display = 'block';
@@ -192,6 +199,14 @@ function show(msg) {
       const gifDuration = defaultDuration * 1000;
       hideTimer = setTimeout(hide, Math.min(gifDuration, 30000));
 
+    } else if (mediaType === 'audio') {
+      // audio seul — pas de visuel, juste le sender et le texte
+      mediaWrap.style.display = 'none';
+      audioEl.src = url;
+      audioEl.load();
+      audioEl.play();
+      audioEl.onended = () => { hideTimer = setTimeout(hide, 300); };
+      audioEl.onerror = () => { hideTimer = setTimeout(hide, defaultDuration * 1000); };
     } else {
       // image
       imgEl.style.display = 'block';

@@ -1,4 +1,3 @@
-// v2.5.0
 const { app, BrowserWindow, ipcMain, screen, Tray, Menu, nativeImage, dialog } = require('electron');
 const { WebSocket } = require('ws');
 const { autoUpdater } = require('electron-updater');
@@ -152,6 +151,12 @@ app.whenReady().then(() => {
 });
 
 ipcMain.handle('get-config', () => loadConfig());
+ipcMain.handle('media-done', () => {
+  const cfg = loadConfig();
+  if (ws && ws.readyState === ws.OPEN && cfg.guildId) {
+    ws.send(JSON.stringify({ type: 'done', guildId: cfg.guildId }));
+  }
+});
 ipcMain.handle('get-version', () => app.getVersion());
 ipcMain.handle('save-config', (_, cfg) => { saveConfig(cfg); connect(cfg); return true; });
 ipcMain.handle('set-dnd', (_, val) => { dnd = val; setTray(val ? 'Ne pas déranger' : 'connecté ✓'); });

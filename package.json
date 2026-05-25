@@ -1,6 +1,6 @@
 {
   "name": "livechat-overlay",
-  "version": "2.5.0",
+  "version": "2.7.0",
   "description": "LiveChat Overlay",
   "main": "src/main.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.livechat.overlay",
-    "productName": "LiveChatOverlay",
+    "productName": "LiveChat Overlay",
     "publish": {
       "provider": "github",
       "owner": "Saltmon69",
@@ -25,14 +25,11 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico",
-      "artifactName": "LiveChatOverlay-Setup-${version}.exe"
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": true,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
-      "deleteAppDataOnUninstall": false
+      "perMachine": false
     },
     "files": [
       "src/**/*",
