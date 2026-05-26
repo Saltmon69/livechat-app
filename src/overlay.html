@@ -16,61 +16,23 @@ html, body {
   inset: 0;
   pointer-events: none;
   visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 #overlay.show { visibility: visible; }
 
-/* === LAYOUT AVEC MÉDIA === */
-#overlay.has-media #media-wrap {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-}
-
-/* Sender positionné juste au-dessus du média */
-#overlay.has-media #sender {
-  position: absolute;
-  top: -44px;
-  left: 0;
+/* Sender — au-dessus du média, aligné à gauche */
+#sender {
   display: flex;
   align-items: center;
+  align-self: flex-start;
   gap: 10px;
+  margin-bottom: 4px;
 }
 
-#overlay.has-media #text-el {
-  position: absolute;
-  top: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90vw;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* === LAYOUT SANS MÉDIA (texte seul / audio) === */
-#overlay.no-media #sender {
-  position: fixed;
-  top: 24px;
-  left: 24px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#overlay.no-media #text-el {
-  position: fixed;
-  top: 90px;
-  left: 24px;
-  max-width: 60vw;
-  text-align: left;
-}
-
-/* === SENDER === */
 #avatar {
   width: 52px;
   height: 52px;
@@ -84,14 +46,18 @@ html, body {
   font-size: 20px;
   font-weight: 800;
   color: white;
-  text-shadow:
-    -2px -2px 0 #000, 2px -2px 0 #000,
-    -2px  2px 0 #000, 2px  2px 0 #000;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
   display: none;
 }
 
-/* === MÉDIA === */
-#media-wrap { display: none; position: relative; }
+/* Bloc central : média + texte empilés */
+#center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 90vw;
+}
 
 #media-img {
   display: block;
@@ -113,11 +79,12 @@ html, body {
   border-radius: 8px;
 }
 
-/* === TEXTE === */
 #text-el {
   font-size: 28px;
   font-weight: 800;
   color: white;
+  text-align: center;
+  max-width: 85vw;
   line-height: 1.3;
   word-break: break-word;
   text-shadow:
@@ -132,17 +99,15 @@ html, body {
 <body>
 
 <div id="overlay">
-  <div id="sender">
-    <img id="avatar" src="" alt="">
-    <span id="username"></span>
+  <div id="center">
+    <div id="sender">
+      <img id="avatar" src="" alt="">
+      <span id="username"></span>
+    </div>
+    <img id="media-img" src="" alt="" style="display:none">
+    <video id="media-vid" playsinline style="display:none"></video>
+    <div id="text-el"></div>
   </div>
-
-  <div id="media-wrap">
-    <img id="media-img" src="" alt="">
-    <video id="media-vid" playsinline></video>
-  </div>
-
-  <div id="text-el"></div>
 </div>
 <audio id="audio-el"></audio>
 
@@ -152,7 +117,6 @@ const { ipcRenderer } = require('electron');
 const overlay  = document.getElementById('overlay');
 const avatarEl = document.getElementById('avatar');
 const unameEl  = document.getElementById('username');
-const mediaWrap= document.getElementById('media-wrap');
 const imgEl    = document.getElementById('media-img');
 const vidEl    = document.getElementById('media-vid');
 const textEl   = document.getElementById('text-el');
@@ -182,32 +146,27 @@ function show(msg) {
   const vol = typeof volume === 'number' ? volume : 1;
 
   // Sender
-  if (avatar) { avatarEl.src = avatar; avatarEl.style.display = 'block'; } 
-  else { avatarEl.style.display = 'none'; }
-  if (username) { unameEl.textContent = username; unameEl.style.display = 'block'; } 
-  else { unameEl.style.display = 'none'; }
+  avatarEl.style.display = avatar ? 'block' : 'none';
+  if (avatar) avatarEl.src = avatar;
+  unameEl.style.display = username ? 'block' : 'none';
+  if (username) unameEl.textContent = username;
 
   // Texte
-  if (text) { textEl.textContent = text; textEl.style.display = 'block'; } 
-  else { textEl.style.display = 'none'; }
+  textEl.style.display = text ? 'block' : 'none';
+  if (text) textEl.textContent = text;
 
+  // Reset médias
   imgEl.style.display = 'none';
   vidEl.style.display = 'none';
-  mediaWrap.style.display = 'none';
 
-  const hasMedia = url && mediaType !== 'audio';
-  overlay.classList.remove('has-media', 'no-media');
-  overlay.classList.add(hasMedia ? 'has-media' : 'no-media');
   overlay.classList.add('show');
 
   if (url) {
     if (mediaType === 'video') {
-      mediaWrap.style.display = 'flex';
       vidEl.style.display = 'block';
       vidEl.volume = vol;
       vidEl.src = url;
       vidEl.load();
-
       vidEl.onloadedmetadata = () => {
         const dur = vidEl.duration;
         if (dur <= 5) {
@@ -225,12 +184,6 @@ function show(msg) {
       };
       hideTimer = setTimeout(() => { if (!vidEl.duration) hide(); }, 35000);
 
-    } else if (mediaType === 'gif') {
-      mediaWrap.style.display = 'flex';
-      imgEl.style.display = 'block';
-      imgEl.src = url;
-      hideTimer = setTimeout(hide, Math.min(defaultDuration * 1000, 30000));
-
     } else if (mediaType === 'audio') {
       audioEl.volume = vol;
       audioEl.src = url;
@@ -240,11 +193,10 @@ function show(msg) {
       audioEl.onerror = () => { hideTimer = setTimeout(hide, defaultDuration * 1000); };
 
     } else {
-      // image
-      mediaWrap.style.display = 'flex';
+      // image ou gif
       imgEl.style.display = 'block';
       imgEl.src = url;
-      hideTimer = setTimeout(hide, defaultDuration * 1000);
+      hideTimer = setTimeout(hide, Math.min(defaultDuration * 1000, 30000));
     }
   } else {
     hideTimer = setTimeout(hide, defaultDuration * 1000);
