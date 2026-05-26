@@ -1,6 +1,6 @@
 {
   "name": "livechat-overlay",
-  "version": "2.9.5",
+  "version": "2.9.7",
   "description": "LiveChat Overlay",
   "main": "src/main.js",
   "scripts": {
