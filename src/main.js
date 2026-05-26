@@ -147,6 +147,10 @@ app.whenReady().then(() => {
 });
 
 ipcMain.handle('get-config', () => loadConfig());
+ipcMain.handle('get-startup', () => app.getLoginItemSettings().openAtLogin);
+ipcMain.handle('set-startup', (_, val) => {
+  app.setLoginItemSettings({ openAtLogin: val });
+});
 ipcMain.handle('save-config', (_, cfg) => { saveConfig(cfg); connect(cfg); return true; });
 ipcMain.handle('set-dnd', (_, val) => { dnd = val; setTray(val ? 'Ne pas déranger' : 'connecté ✓'); });
 ipcMain.handle('get-dnd', () => dnd);
