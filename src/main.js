@@ -80,6 +80,7 @@ function connect(cfg) {
       if (msg.action === 'show' && !dnd) {
         const cfg = loadConfig();
         msg.defaultDuration = cfg.duration || 8;
+        msg.volume = typeof cfg.volume === 'number' ? cfg.volume : 1;
         if (overlayWin && !overlayWin.isDestroyed()) {
           overlayWin.webContents.send('show-media', msg);
         }
