@@ -86,6 +86,12 @@ button:hover { filter: brightness(1.1); }
   <span class="dur-val"><span id="dval">8</span>s</span>
 </div>
 
+<label class="field">Volume (vidéos & sons)</label>
+<div class="dur-row">
+  <input type="range" id="volume" min="0" max="100" value="100" step="1">
+  <span class="dur-val"><span id="vval">100</span>%</span>
+</div>
+
 <button id="btn">Connecter</button>
 <div id="status"></div>
 
@@ -93,6 +99,8 @@ button:hover { filter: brightness(1.1); }
 const { ipcRenderer } = require('electron');
 
 const durSlider = document.getElementById('duration');
+const volSlider = document.getElementById('volume');
+volSlider.oninput = () => document.getElementById('vval').textContent = volSlider.value;
 const dndEl = document.getElementById('dnd');
 durSlider.oninput = () => document.getElementById('dval').textContent = durSlider.value;
 
@@ -104,6 +112,8 @@ async function load() {
   document.getElementById('guildId').value = cfg.guildId || '';
   durSlider.value = cfg.duration || 8;
   document.getElementById('dval').textContent = durSlider.value;
+  volSlider.value = typeof cfg.volume === 'number' ? Math.round(cfg.volume * 100) : 100;
+  document.getElementById('vval').textContent = volSlider.value;
   dndEl.checked = await ipcRenderer.invoke('get-dnd');
 }
 
@@ -113,7 +123,8 @@ document.getElementById('btn').onclick = async () => {
   const duration = parseInt(durSlider.value);
   const st = document.getElementById('status');
   if (!serverUrl || !guildId) { st.className = 'err'; st.textContent = '❌ Remplis les deux champs.'; return; }
-  await ipcRenderer.invoke('save-config', { serverUrl, guildId, duration });
+  const volume = parseInt(volSlider.value) / 100;
+  await ipcRenderer.invoke('save-config', { serverUrl, guildId, duration, volume });
   st.className = 'ok'; st.textContent = '✅ Connecté !';
 };
 
