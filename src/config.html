@@ -72,6 +72,17 @@ button:hover { filter: brightness(1.1); }
   </label>
 </div>
 
+<div class="dnd-row" style="margin-top:10px">
+  <div>
+    <div class="dnd-label">Lancer au démarrage</div>
+    <div class="dnd-sub">Démarre automatiquement avec Windows</div>
+  </div>
+  <label class="toggle">
+    <input type="checkbox" id="startup">
+    <span class="slider"></span>
+  </label>
+</div>
+
 <label class="field">URL du serveur</label>
 <input type="text" id="serverUrl" placeholder="https://livechat-xxx.glitch.me">
 <p class="hint">L'URL fournie par la personne qui héberge le bot</p>
@@ -106,6 +117,9 @@ durSlider.oninput = () => document.getElementById('dval').textContent = durSlide
 
 dndEl.onchange = () => ipcRenderer.invoke('set-dnd', dndEl.checked);
 
+const startupEl = document.getElementById('startup');
+startupEl.onchange = () => ipcRenderer.invoke('set-startup', startupEl.checked);
+
 async function load() {
   const cfg = await ipcRenderer.invoke('get-config');
   document.getElementById('serverUrl').value = cfg.serverUrl || '';
@@ -115,6 +129,7 @@ async function load() {
   volSlider.value = typeof cfg.volume === 'number' ? Math.round(cfg.volume * 100) : 100;
   document.getElementById('vval').textContent = volSlider.value;
   dndEl.checked = await ipcRenderer.invoke('get-dnd');
+  startupEl.checked = await ipcRenderer.invoke('get-startup');
 }
 
 document.getElementById('btn').onclick = async () => {
