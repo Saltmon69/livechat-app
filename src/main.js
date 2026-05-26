@@ -51,8 +51,9 @@ function createOverlay() {
 function createConfigWindow() {
   if (configWin && !configWin.isDestroyed()) { configWin.focus(); return; }
   configWin = new BrowserWindow({
-    width: 460, height: 380,
-    resizable: false,
+    width: 460, height: 420,
+    resizable: true,
+    minWidth: 400, minHeight: 380,
     title: 'LiveChat Overlay',
     icon: path.join(__dirname, '../assets/icon.ico'),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
@@ -69,9 +70,15 @@ function connect(cfg) {
   const url = cfg.serverUrl.replace(/^https?/, 'wss').replace(/\/$/, '');
   ws = new WebSocket(url);
 
+  let pingInterval = null;
+
   ws.on('open', () => {
     ws.send(JSON.stringify({ type: 'register', guildId: cfg.guildId }));
     setTray('connecté ✓');
+    // Ping toutes les 30s pour garder la connexion WebSocket vivante
+    pingInterval = setInterval(() => {
+      if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+    }, 30000);
   });
 
   ws.on('message', (data) => {
@@ -89,6 +96,7 @@ function connect(cfg) {
   });
 
   ws.on('close', () => {
+    if (pingInterval) { clearInterval(pingInterval); pingInterval = null; }
     setTray('déconnecté — reconnexion...');
     if (!reconnectTimer) {
       reconnectTimer = setTimeout(() => {
