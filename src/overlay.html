@@ -14,18 +14,14 @@ html, body {
 #overlay {
   position: fixed;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
   visibility: hidden;
 }
 
 #overlay.show { visibility: visible; }
 
-/* Avatar + pseudo - haut gauche */
-#sender {
+/* === LAYOUT AVEC MÉDIA === */
+#overlay.has-media #sender {
   position: fixed;
   top: 24px;
   left: 24px;
@@ -34,70 +30,98 @@ html, body {
   gap: 10px;
 }
 
-#avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: none;
-}
-
-#username {
-  font-size: 18px;
-  font-weight: 700;
-  color: white;
-  text-shadow:
-    -2px -2px 0 #000,
-     2px -2px 0 #000,
-    -2px  2px 0 #000,
-     2px  2px 0 #000;
-  display: none;
-}
-
-/* Média centré */
-#media-wrap {
-  display: none;
+#overlay.has-media #media-wrap {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
   align-items: center;
   justify-content: center;
 }
 
+#overlay.has-media #text-el {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90vw;
+  text-align: center;
+}
+
+/* === LAYOUT SANS MÉDIA (texte seul / audio) === */
+#overlay.no-media #sender {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#overlay.no-media #text-el {
+  position: fixed;
+  top: 90px;
+  left: 24px;
+  max-width: 60vw;
+  text-align: left;
+}
+
+/* === SENDER === */
+#avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  display: none;
+}
+
+#username {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+  text-shadow:
+    -2px -2px 0 #000, 2px -2px 0 #000,
+    -2px  2px 0 #000, 2px  2px 0 #000;
+  display: none;
+}
+
+/* === MÉDIA === */
+#media-wrap { display: none; }
+
 #media-img {
   display: block;
-  max-width: 90vw;
+  max-width: 85vw;
   max-height: 50vh;
   width: auto;
   height: auto;
   object-fit: contain;
+  border-radius: 8px;
 }
 
 #media-vid {
   display: block;
-  max-width: 90vw;
+  max-width: 85vw;
   max-height: 50vh;
   width: auto;
   height: auto;
   object-fit: contain;
+  border-radius: 8px;
 }
 
-/* Texte sous le média */
+/* === TEXTE === */
 #text-el {
-  margin-top: 16px;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: white;
-  text-align: center;
-  max-width: 80vw;
-  line-height: 1.4;
+  line-height: 1.3;
   word-break: break-word;
   text-shadow:
-    -2px -2px 0 #000,
-     2px -2px 0 #000,
-    -2px  2px 0 #000,
-     2px  2px 0 #000,
-     0   -2px 0 #000,
-     0    2px 0 #000,
-    -2px   0  0 #000,
-     2px   0  0 #000;
+    -2px -2px 0 #000, 2px -2px 0 #000,
+    -2px  2px 0 #000, 2px  2px 0 #000,
+    0 -2px 0 #000, 0 2px 0 #000,
+    -2px 0 0 #000, 2px 0 0 #000;
   display: none;
 }
 </style>
@@ -132,6 +156,7 @@ const textEl   = document.getElementById('text-el');
 const audioEl  = document.getElementById('audio-el');
 
 let hideTimer = null;
+let mediaDoneSent = false;
 
 function hide() {
   overlay.classList.remove('show');
@@ -140,33 +165,43 @@ function hide() {
   imgEl.src = '';
   audioEl.pause();
   audioEl.src = '';
-  ipcRenderer.invoke('media-done').catch(() => {});
+  if (!mediaDoneSent) {
+    mediaDoneSent = true;
+    ipcRenderer.invoke('media-done').catch(() => {});
+  }
 }
 
 function show(msg) {
   if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  mediaDoneSent = false;
 
-  const { username, avatar, text, url, mediaType, defaultDuration } = msg;
+  const { username, avatar, text, url, mediaType, defaultDuration, volume } = msg;
+  const vol = typeof volume === 'number' ? volume : 1;
 
   // Sender
-  if (avatar) { avatarEl.src = avatar; avatarEl.style.display = 'block'; } else { avatarEl.style.display = 'none'; }
-  if (username) { unameEl.textContent = username; unameEl.style.display = 'block'; } else { unameEl.style.display = 'none'; }
+  if (avatar) { avatarEl.src = avatar; avatarEl.style.display = 'block'; } 
+  else { avatarEl.style.display = 'none'; }
+  if (username) { unameEl.textContent = username; unameEl.style.display = 'block'; } 
+  else { unameEl.style.display = 'none'; }
 
   // Texte
-  if (text) { textEl.textContent = text; textEl.style.display = 'block'; } else { textEl.style.display = 'none'; }
+  if (text) { textEl.textContent = text; textEl.style.display = 'block'; } 
+  else { textEl.style.display = 'none'; }
 
-  // Média
   imgEl.style.display = 'none';
   vidEl.style.display = 'none';
   mediaWrap.style.display = 'none';
 
+  const hasMedia = url && mediaType !== 'audio';
+  overlay.classList.remove('has-media', 'no-media');
+  overlay.classList.add(hasMedia ? 'has-media' : 'no-media');
   overlay.classList.add('show');
 
   if (url) {
-    mediaWrap.style.display = 'flex';
-
     if (mediaType === 'video') {
+      mediaWrap.style.display = 'flex';
       vidEl.style.display = 'block';
+      vidEl.volume = vol;
       vidEl.src = url;
       vidEl.load();
 
@@ -182,39 +217,33 @@ function show(msg) {
           };
         } else {
           vidEl.play();
-          // Pas de timer forcé — on attend la fin naturelle de la vidéo
           vidEl.onended = () => { hideTimer = setTimeout(hide, 300); };
         }
       };
-
-      // Fallback si metadata jamais chargée (ex: format non supporté)
-      hideTimer = setTimeout(() => {
-        if (!vidEl.duration) hide();
-      }, 35000);
+      hideTimer = setTimeout(() => { if (!vidEl.duration) hide(); }, 35000);
 
     } else if (mediaType === 'gif') {
+      mediaWrap.style.display = 'flex';
       imgEl.style.display = 'block';
       imgEl.src = url;
-      // GIF : on l'affiche 1x, durée fixe
-      const gifDuration = defaultDuration * 1000;
-      hideTimer = setTimeout(hide, Math.min(gifDuration, 30000));
+      hideTimer = setTimeout(hide, Math.min(defaultDuration * 1000, 30000));
 
     } else if (mediaType === 'audio') {
-      // audio seul — pas de visuel, juste le sender et le texte
-      mediaWrap.style.display = 'none';
+      audioEl.volume = vol;
       audioEl.src = url;
       audioEl.load();
       audioEl.play();
       audioEl.onended = () => { hideTimer = setTimeout(hide, 300); };
       audioEl.onerror = () => { hideTimer = setTimeout(hide, defaultDuration * 1000); };
+
     } else {
       // image
+      mediaWrap.style.display = 'flex';
       imgEl.style.display = 'block';
       imgEl.src = url;
       hideTimer = setTimeout(hide, defaultDuration * 1000);
     }
   } else {
-    // texte seul
     hideTimer = setTimeout(hide, defaultDuration * 1000);
   }
 }
