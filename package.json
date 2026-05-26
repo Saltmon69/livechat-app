@@ -1,6 +1,6 @@
 {
   "name": "livechat-overlay",
-  "version": "2.9.2",
+  "version": "2.9.4",
   "description": "LiveChat Overlay",
   "main": "src/main.js",
   "scripts": {
@@ -25,7 +25,8 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "artifactName": "LiveChatOverlay-Setup-${version}.exe"
     },
     "nsis": {
       "oneClick": true,
