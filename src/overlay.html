@@ -24,7 +24,14 @@ html, body {
 
 #overlay.show { visibility: visible; }
 
-/* Sender — au-dessus du média, aligné à gauche */
+#center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 90vw;
+}
+
 #sender {
   display: flex;
   align-items: center;
@@ -48,15 +55,6 @@ html, body {
   color: white;
   text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
   display: none;
-}
-
-/* Bloc central : média + texte empilés */
-#center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  max-width: 90vw;
 }
 
 #media-img {
@@ -145,17 +143,14 @@ function show(msg) {
   const { username, avatar, text, url, mediaType, defaultDuration, volume } = msg;
   const vol = typeof volume === 'number' ? volume : 1;
 
-  // Sender
   avatarEl.style.display = avatar ? 'block' : 'none';
   if (avatar) avatarEl.src = avatar;
   unameEl.style.display = username ? 'block' : 'none';
   if (username) unameEl.textContent = username;
 
-  // Texte
   textEl.style.display = text ? 'block' : 'none';
   if (text) textEl.textContent = text;
 
-  // Reset médias
   imgEl.style.display = 'none';
   vidEl.style.display = 'none';
 
@@ -168,19 +163,8 @@ function show(msg) {
       vidEl.src = url;
       vidEl.load();
       vidEl.onloadedmetadata = () => {
-        const dur = vidEl.duration;
-        if (dur <= 5) {
-          let plays = 0;
-          vidEl.play();
-          vidEl.onended = () => {
-            plays++;
-            if (plays < 2) { vidEl.currentTime = 0; vidEl.play(); }
-            else { hideTimer = setTimeout(hide, 300); }
-          };
-        } else {
-          vidEl.play();
-          vidEl.onended = () => { hideTimer = setTimeout(hide, 300); };
-        }
+        vidEl.play();
+        vidEl.onended = () => { hideTimer = setTimeout(hide, 300); };
       };
       hideTimer = setTimeout(() => { if (!vidEl.duration) hide(); }, 35000);
 
@@ -193,7 +177,6 @@ function show(msg) {
       audioEl.onerror = () => { hideTimer = setTimeout(hide, defaultDuration * 1000); };
 
     } else {
-      // image ou gif
       imgEl.style.display = 'block';
       imgEl.src = url;
       hideTimer = setTimeout(hide, Math.min(defaultDuration * 1000, 30000));
@@ -204,6 +187,7 @@ function show(msg) {
 }
 
 ipcRenderer.on('show-media', (_, msg) => show(msg));
+ipcRenderer.on('stop-media', () => hide());
 </script>
 </body>
 </html>

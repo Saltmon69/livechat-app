@@ -9,15 +9,13 @@ body { font-family: 'Segoe UI', sans-serif; background: #1e1f22; color: #dcddde;
 h1 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .sub { font-size: 12px; color: #72767d; margin-bottom: 24px; }
 
-/* DND toggle en haut */
-.dnd-row {
+.toggle-row {
   display: flex; align-items: center; justify-content: space-between;
-  background: #2b2d31; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
+  background: #2b2d31; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px;
 }
-.dnd-label { font-size: 13px; font-weight: 600; color: #dcddde; }
-.dnd-sub { font-size: 11px; color: #72767d; margin-top: 2px; }
+.toggle-label { font-size: 13px; font-weight: 600; color: #dcddde; }
+.toggle-sub { font-size: 11px; color: #72767d; margin-top: 2px; }
 
-/* Toggle switch */
 .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .slider {
@@ -28,21 +26,22 @@ h1 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
   content: ''; position: absolute; width: 18px; height: 18px;
   left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s;
 }
-input:checked + .slider { background: #ed4245; }
+input:checked + .slider { background: #5865f2; }
 input:checked + .slider:before { transform: translateX(20px); }
 
 label.field { display: block; font-size: 11px; font-weight: 700; color: #72767d; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; margin-top: 16px; }
-input[type="text"] {
+input[type="text"], select {
   width: 100%; background: #111214; border: 1px solid #3f4147;
   border-radius: 8px; color: #dcddde; font-size: 13px; padding: 9px 12px; outline: none;
   transition: border-color 0.2s;
 }
-input[type="text"]:focus { border-color: #5865f2; }
+input[type="text"]:focus, select:focus { border-color: #5865f2; }
+select option { background: #111214; }
 .hint { font-size: 11px; color: #72767d; margin-top: 4px; line-height: 1.5; }
 
 .dur-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 input[type="range"] { flex: 1; accent-color: #5865f2; }
-.dur-val { font-size: 13px; font-weight: 700; color: #5865f2; min-width: 32px; text-align: right; }
+.dur-val { font-size: 13px; font-weight: 700; color: #5865f2; min-width: 36px; text-align: right; }
 
 button {
   width: 100%; margin-top: 20px; padding: 11px; border: none; border-radius: 8px;
@@ -54,52 +53,49 @@ button:hover { filter: brightness(1.1); }
 #status { margin-top: 12px; padding: 9px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; display: none; }
 .ok { background: #1a472a; color: #3ba55c; display: block !important; }
 .err { background: #4a1520; color: #ed4245; display: block !important; }
+
+.version { text-align: center; font-size: 11px; color: #4f545c; margin-top: 16px; }
 </style>
 </head>
 <body>
 <h1>🎮 LiveChat Overlay</h1>
-<p class="sub">v2.0 — Système partagé</p>
+<p class="sub">v<span id="ver"></span></p>
 
-<!-- DND -->
-<div class="dnd-row">
+<div class="toggle-row">
   <div>
-    <div class="dnd-label">Ne pas déranger</div>
-    <div class="dnd-sub">Rien ne s'affiche quand activé</div>
+    <div class="toggle-label">Ne pas déranger</div>
+    <div class="toggle-sub">Rien ne s'affiche quand activé</div>
   </div>
-  <label class="toggle">
-    <input type="checkbox" id="dnd">
-    <span class="slider"></span>
-  </label>
+  <label class="toggle"><input type="checkbox" id="dnd"><span class="slider"></span></label>
 </div>
 
-<div class="dnd-row" style="margin-top:10px">
+<div class="toggle-row">
   <div>
-    <div class="dnd-label">Lancer au démarrage</div>
-    <div class="dnd-sub">Démarre automatiquement avec Windows</div>
+    <div class="toggle-label">Lancer au démarrage</div>
+    <div class="toggle-sub">Démarre automatiquement avec Windows</div>
   </div>
-  <label class="toggle">
-    <input type="checkbox" id="startup">
-    <span class="slider"></span>
-  </label>
+  <label class="toggle"><input type="checkbox" id="startup"><span class="slider"></span></label>
 </div>
 
 <label class="field">URL du serveur</label>
-<input type="text" id="serverUrl" placeholder="https://livechat-xxx.glitch.me">
-<p class="hint">L'URL fournie par la personne qui héberge le bot</p>
+<input type="text" id="serverUrl" placeholder="https://livechat-xxx.up.railway.app">
 
 <label class="field">ID du serveur Discord</label>
 <input type="text" id="guildId" placeholder="123456789012345678">
 <p class="hint">Clic droit sur le serveur Discord → Copier l'identifiant</p>
 
+<label class="field">Écran d'affichage</label>
+<select id="displayIndex"></select>
+
 <label class="field">Durée d'affichage (images)</label>
 <div class="dur-row">
-  <input type="range" id="duration" min="2" max="20" value="8" step="1">
+  <input type="range" id="duration" min="2" max="20" value="8">
   <span class="dur-val"><span id="dval">8</span>s</span>
 </div>
 
 <label class="field">Volume (vidéos & sons)</label>
 <div class="dur-row">
-  <input type="range" id="volume" min="0" max="100" value="100" step="1">
+  <input type="range" id="volume" min="0" max="100" value="100">
   <span class="dur-val"><span id="vval">100</span>%</span>
 </div>
 
@@ -111,13 +107,13 @@ const { ipcRenderer } = require('electron');
 
 const durSlider = document.getElementById('duration');
 const volSlider = document.getElementById('volume');
-volSlider.oninput = () => document.getElementById('vval').textContent = volSlider.value;
 const dndEl = document.getElementById('dnd');
-durSlider.oninput = () => document.getElementById('dval').textContent = durSlider.value;
-
-dndEl.onchange = () => ipcRenderer.invoke('set-dnd', dndEl.checked);
-
 const startupEl = document.getElementById('startup');
+const displayEl = document.getElementById('displayIndex');
+
+durSlider.oninput = () => document.getElementById('dval').textContent = durSlider.value;
+volSlider.oninput = () => document.getElementById('vval').textContent = volSlider.value;
+dndEl.onchange = () => ipcRenderer.invoke('set-dnd', dndEl.checked);
 startupEl.onchange = () => ipcRenderer.invoke('set-startup', startupEl.checked);
 
 async function load() {
@@ -130,25 +126,29 @@ async function load() {
   document.getElementById('vval').textContent = volSlider.value;
   dndEl.checked = await ipcRenderer.invoke('get-dnd');
   startupEl.checked = await ipcRenderer.invoke('get-startup');
+
+  // Écrans
+  const displays = await ipcRenderer.invoke('get-displays');
+  displayEl.innerHTML = displays.map(d => `<option value="${d.index}">${d.label}</option>`).join('');
+  displayEl.value = cfg.displayIndex || 0;
+
+  const ver = await ipcRenderer.invoke('get-version');
+  document.getElementById('ver').textContent = ver;
 }
 
 document.getElementById('btn').onclick = async () => {
   const serverUrl = document.getElementById('serverUrl').value.trim();
   const guildId = document.getElementById('guildId').value.trim();
   const duration = parseInt(durSlider.value);
+  const volume = parseInt(volSlider.value) / 100;
+  const displayIndex = parseInt(displayEl.value);
   const st = document.getElementById('status');
   if (!serverUrl || !guildId) { st.className = 'err'; st.textContent = '❌ Remplis les deux champs.'; return; }
-  const volume = parseInt(volSlider.value) / 100;
-  await ipcRenderer.invoke('save-config', { serverUrl, guildId, duration, volume });
+  await ipcRenderer.invoke('save-config', { serverUrl, guildId, duration, volume, displayIndex });
   st.className = 'ok'; st.textContent = '✅ Connecté !';
 };
 
 load();
-ipcRenderer.invoke('get-version').then(v => {
-  const el = document.getElementById('ver');
-  if (el) el.textContent = v;
-});
 </script>
-<div style="text-align:center;font-size:11px;color:#4f545c;margin-top:16px">v<span id="ver"></span></div>
 </body>
 </html>

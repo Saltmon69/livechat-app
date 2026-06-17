@@ -1,6 +1,6 @@
 {
   "name": "livechat-overlay",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "LiveChat Overlay",
   "main": "src/main.js",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.livechat.overlay",
-    "productName": "LiveChat Overlay",
+    "productName": "LiveChatOverlay",
     "publish": {
       "provider": "github",
       "owner": "Saltmon69",
@@ -28,14 +28,7 @@
       "icon": "assets/icon.ico",
       "artifactName": "LiveChatOverlay-Setup-${version}.exe"
     },
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false
-    },
-    "files": [
-      "src/**/*",
-      "assets/**/*",
-      "package.json"
-    ]
+    "nsis": { "oneClick": true, "perMachine": false },
+    "files": ["src/**/*", "assets/**/*", "package.json"]
   }
 }

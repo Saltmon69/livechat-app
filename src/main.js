@@ -9,7 +9,7 @@ function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_PATH)) return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch {}
-  return { serverUrl: '', guildId: '', duration: 8, volume: 1 };
+  return { serverUrl: '', guildId: '', duration: 8, volume: 1, displayIndex: 0 };
 }
 
 function saveConfig(cfg) {
@@ -23,9 +23,15 @@ let socket = null;
 let dnd = false;
 
 function createOverlay() {
-  const { width, height } = screen.getPrimaryDisplay().bounds;
+  const cfg = loadConfig();
+  const displays = screen.getAllDisplays();
+  const display = displays[cfg.displayIndex] || displays[0];
+  const { x, y, width, height } = display.bounds;
+
+  if (overlayWin && !overlayWin.isDestroyed()) overlayWin.close();
+
   overlayWin = new BrowserWindow({
-    width, height, x: 0, y: 0,
+    width, height, x, y,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
@@ -49,9 +55,9 @@ function createOverlay() {
 function createConfigWindow() {
   if (configWin && !configWin.isDestroyed()) { configWin.focus(); return; }
   configWin = new BrowserWindow({
-    width: 460, height: 420,
+    width: 460, height: 500,
     resizable: true,
-    minWidth: 400, minHeight: 380,
+    minWidth: 400, minHeight: 420,
     title: 'LiveChat Overlay',
     icon: path.join(__dirname, '../assets/icon.ico'),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
@@ -76,11 +82,6 @@ function connect(cfg) {
   socket.on('connect', () => {
     socket.emit('register', { guildId: cfg.guildId });
     setTray('connecté ✓');
-    console.log('[Socket] Connecté');
-  });
-
-  socket.on('registered', () => {
-    console.log('[Socket] Enregistré');
   });
 
   socket.on('show-media', (msg) => {
@@ -93,14 +94,18 @@ function connect(cfg) {
     }
   });
 
+  socket.on('stop-media', () => {
+    if (overlayWin && !overlayWin.isDestroyed()) {
+      overlayWin.webContents.send('stop-media');
+    }
+  });
+
   socket.on('disconnect', (reason) => {
     setTray(`déconnecté (${reason})`);
-    console.log('[Socket] Déconnecté:', reason);
   });
 
   socket.on('connect_error', (err) => {
     setTray('erreur connexion...');
-    console.log('[Socket] Erreur:', err.message);
   });
 }
 
@@ -147,14 +152,21 @@ app.whenReady().then(() => {
 });
 
 ipcMain.handle('get-config', () => loadConfig());
-ipcMain.handle('get-startup', () => app.getLoginItemSettings().openAtLogin);
-ipcMain.handle('set-startup', (_, val) => {
-  app.setLoginItemSettings({ openAtLogin: val });
+ipcMain.handle('save-config', (_, cfg) => {
+  saveConfig(cfg);
+  connect(cfg);
+  createOverlay(); // recrée l'overlay sur le bon écran
+  return true;
 });
-ipcMain.handle('save-config', (_, cfg) => { saveConfig(cfg); connect(cfg); return true; });
 ipcMain.handle('set-dnd', (_, val) => { dnd = val; setTray(val ? 'Ne pas déranger' : 'connecté ✓'); });
 ipcMain.handle('get-dnd', () => dnd);
 ipcMain.handle('get-version', () => app.getVersion());
+ipcMain.handle('get-startup', () => app.getLoginItemSettings().openAtLogin);
+ipcMain.handle('set-startup', (_, val) => { app.setLoginItemSettings({ openAtLogin: val }); });
+ipcMain.handle('get-displays', () => screen.getAllDisplays().map((d, i) => ({
+  index: i,
+  label: `Écran ${i + 1} (${d.bounds.width}x${d.bounds.height})`,
+})));
 ipcMain.handle('media-done', () => {
   if (socket && socket.connected) {
     const cfg = loadConfig();
